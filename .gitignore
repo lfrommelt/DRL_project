@@ -1,0 +1,4 @@
+#data
+.data/
+#only jupytext or scripts
+*.ipynb
