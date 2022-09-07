@@ -144,6 +144,32 @@ def check_accuracy(loader, model):
 
         print('Got: ', mean_loss / num_samples)
 
+# todo: give metric as argument
+def custom_loss2(sender_input, _message, _receiver_input, receiver_output, _labels, _aux_input=None):
+    """
+    Custom loss function that weights the loss from colored pixels
+    <-> white pixels from the original image 9:1
+    """
+
+    sender_input = sender_input.view([-1, 3 * 100 * 100])
+    sender_input = sender_input.cpu().detach().numpy()
+    receiver_output = receiver_output.cpu().detach().numpy()
+
+    losses = np.zeros(len(sender_input))
+    # fucking batching screws up vectorized numpy use >_<
+    for i in range(len(sender_input)):
+        a = sender_input[i]
+        b = receiver_output[i]
+        white = np.average(mce(a[a==1],b[a==1]))
+        colour = np.average(mce(a[a<1],b[a<1]))
+        losses[i] = 0.8*colour+0.2*white
+
+    return torch.from_numpy(losses), {}
+
+def mce(y_true, y_pred):
+    loss = np.mean((y_true-y_pred)**2)
+    return loss
+
 def custom_loss(sender_input, _message, _receiver_input, receiver_output, _labels, _aux_input=None):
     """
     Custom loss function that weights the loss from colored pixels
@@ -167,7 +193,7 @@ def BinaryCrossEntropy(y_true, y_pred):
     term_0 = (1-y_true) * np.log(1-y_pred + 1e-7)
     term_1 = y_true * np.log(y_pred + 1e-7)
     return -np.mean(term_0+term_1)
-"""
+'''
 def custom_loss(sender_input, _message, _receiver_input, receiver_output, _labels, _aux_input=None):
     """
  #   Custom loss function that weights the loss from colored pixels
@@ -252,7 +278,7 @@ def default_loss(sender_input, _message, _receiver_input, receiver_output, _labe
                                   sender_input.view([-1, 3*100*100]),
                                   reduction='none').mean(dim=1)
     return loss, {}
-"""
+'''
 # Simple CNN's architecture
 class Vision(nn.Module):
   def __init__(self):
@@ -303,7 +329,7 @@ class PretrainVision(nn.Module):
 n_train = 2000
 n_test = 500
 custom_train_data = {}
-files = os.listdir("data/continuous/")  # [2:]
+files = os.listdir("data/continuous/")[:n_train]  # [2:]
 for i in tqdm(range(len(files))):
     file = files[i]
     im = np.moveaxis(
@@ -313,7 +339,7 @@ for i in tqdm(range(len(files))):
     custom_train_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))
 
 custom_test_data = {}
-test_files = os.listdir("data/continuous/")  # [2:]
+test_files = os.listdir("data/continuous/")[n_train:n_train+n_test]  # [2:]
 for i in tqdm(range(len(test_files))):
     file = test_files[i]
     im = np.moveaxis(
@@ -327,7 +353,7 @@ vision = Vision()
 class_prediction = PretrainVision(vision)  # note that we pass vision - which we want to pretrain
 optimizer = core.build_optimizer(class_prediction.parameters())  # uses command-line parameters we passed to core.init
 class_prediction = class_prediction.to(device)
-class_prediction.load_state_dict(torch.load('Class_prediction_very_simple3.pth', map_location=torch.device('cpu')))
+#class_prediction.load_state_dict(torch.load('Class_prediction_very_simple3.pth', map_location=torch.device('cpu')))
 
 # create the dataloaders
 train_data_loader = torch.utils.data.DataLoader(custom_train_data, batch_size=32, shuffle=True)
@@ -392,7 +418,7 @@ receiver_lstm_Cifar10_GS = core.RnnReceiverDeterministic(receiverCifar10, vocab_
 
 game_lstm_Cifar10_GS = core.SenderReceiverRnnReinforce(sender_lstm_Cifar10_GS,
                                                 receiver_lstm_Cifar10_GS,
-                                                custom_loss, sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005)
+                                                custom_loss2, sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005)
 
 # Optimizer definition
 optimizer = torch.optim.Adam([
@@ -412,7 +438,7 @@ trainer_lstm_Cifar10_GS = core.Trainer(game=game_lstm_Cifar10_GS,
                                        callbacks=callbacks)
 
 #load an older version of the game
-game_lstm_Cifar10_GS.load_state_dict(torch.load('models/reinf_Own_Game_completel_new_try2.pth',map_location=torch.device('cpu')))
+#game_lstm_Cifar10_GS.load_state_dict(torch.load('models/reinf_Own_Game_completel_new_try2.pth',map_location=torch.device('cpu')))
 
 # train the game
 n_epochs = 1
