@@ -230,22 +230,25 @@ class PretrainVision(nn.Module):
     return x
 
 # Load the train and test dataset and normalize the images
+# todo: randomize with seed
+n_train = 2000
+n_test = 500
 custom_train_data = {}
-files = os.listdir("/home/ui/Documents/DRL project/hierarchical_reference_game/data/continuousLessTrain")  # [2:]
+files = os.listdir("data/continuous/")  # [2:]
 for i in tqdm(range(len(files))):
     file = files[i]
     im = np.moveaxis(
-        image.imread("/home/ui/Documents/DRL project/hierarchical_reference_game/data/continuousLessTrain/" + file), 2,
+        image.imread("data/continuous/" + file), 2,
         0) /255.
     y = [float(value) for value in file[:-4].split(sep=', ')]
     custom_train_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))
 
 custom_test_data = {}
-test_files = os.listdir("/home/ui/Documents/DRL project/hierarchical_reference_game/data/continuousLessTest")  # [2:]
+test_files = os.listdir("data/continuous/")  # [2:]
 for i in tqdm(range(len(test_files))):
     file = test_files[i]
     im = np.moveaxis(
-        image.imread("/home/ui/Documents/DRL project/hierarchical_reference_game/data/continuousLessTest/" + file), 2,
+        image.imread("data/continuous/" + file), 2,
         0) /255.
     y = [float(value) for value in file[:-4].split(sep=', ')]
     custom_test_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))
@@ -340,14 +343,14 @@ trainer_lstm_Cifar10_GS = core.Trainer(game=game_lstm_Cifar10_GS,
                                        callbacks=callbacks)
 
 #load an older version of the game
-game_lstm_Cifar10_GS.load_state_dict(torch.load('/home/ui/Downloads/reinf_Own_Game_completel_new_try2.pth',map_location=torch.device('cpu')))
+game_lstm_Cifar10_GS.load_state_dict(torch.load('models/reinf_Own_Game_completel_new_try2.pth',map_location=torch.device('cpu')))
 
 # train the game
 n_epochs = 1
 tqdm(trainer_lstm_Cifar10_GS.train(n_epochs))
 
 # save the games current status
-torch.save(game_lstm_Cifar10_GS.state_dict(), '/home/ui/Downloads/reinf_Own_Game_completel_new_try2.pth')
+torch.save(game_lstm_Cifar10_GS.state_dict(), 'models/reinf_Own_Game_completel_new_try2.pth')
 
 # create plot of input and output images from train set
 plots_game_lstm_Cifar10_GS, titles_game_lstm_Cifar10_GS= plot(game_lstm_Cifar10_GS, train_data_loader, is_gs=False,
