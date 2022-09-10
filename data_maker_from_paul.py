@@ -87,7 +87,7 @@ if __name__ == '__main__':
     for i in tqdm(ren):
         generate_image(str(i), discrete==False, color=COL)
 
-
+# todo: can we remove this?
 fig, ax = plt.subplots(1,1, figsize=(6,6))
 
 # define the data between 0 and 20
@@ -99,4 +99,3 @@ y = np.random.uniform(0, 1, size=5000)
 #   y <= 2  is yellow
 #   y >= 10 is red
 #   2 < y < 10 is between from yellow to red, according to its value
-
