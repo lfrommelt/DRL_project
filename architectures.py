@@ -3,30 +3,57 @@ class Hyperparameters():
     loss = mce_loss
     # todo: params
 
-def mce_loss(y_true, y_pred):
-    loss = np.mean((y_true-y_pred)**2)
-    return loss
 
-def custom_loss(sender_input, _message, _receiver_input, receiver_output, _labels, _aux_input=None, color_weight=0.8):
-    """
-    Custom loss function that weights the loss from colored pixels
-    <-> white pixels from the original image 9:1
-    """
+# Simple CNN's architecture
+class Vision(nn.Module):
+    def __init__(self):
+        super(Vision, self).__init__()
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=4,stride=1, padding=1)
+        self.batchNorm1 = nn.BatchNorm2d(32)
+        self.activate1 = nn.LeakyReLU(inplace=True)
+        self.max1 = nn.MaxPool2d(2, 2)
+        self.conv3 = nn.Conv2d(32,8 , kernel_size=3, stride=1, padding=1)
+        self.batchNorm2 = nn.BatchNorm2d(8)
+        self.activate3 = nn.LeakyReLU(inplace=True)
+        self.max2 = nn.MaxPool2d(4, 2)
+        self.faltten1 = nn.Flatten()
+        self.lin1 = nn.Linear(4232, 500)
+        self.activate7 = nn.LeakyReLU(inplace=True)
+        self.lin2 = nn.Linear(500,6)
+        self.activate8 = nn.SELU(inplace=True)
 
-    sender_input = sender_input.view([-1, 3 * 100 * 100])
-    sender_input = sender_input.cpu().detach().numpy()
-    receiver_output = receiver_output.cpu().detach().numpy()
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.batchNorm1(x)
+        x = self.activate1(x)
+        x = self.max1(x)
+        x = self.conv3(x)
+        x = self.batchNorm2(x)
+        x = self.activate3(x)
+        x = self.max2(x)
+        x = self.faltten1(x)
+        x = self.lin1(x)
+        x = self.activate7(x)
 
-    losses = np.zeros(len(sender_input))
-    # fucking batching screws up vectorized numpy use >_<
-    for i in range(len(sender_input)):
-        a = sender_input[i]
-        b = receiver_output[i]
-        white = np.average(mce(a[a==1],b[a==1]))
-        colour = np.average(mce(a[a<1],b[a<1]))
-        losses[i] = color_weight*colour+(1-color_weight)*white
+        return x
 
-    return torch.from_numpy(losses), {}
+    @staticmethod
+    def load(name="vision"):
+        # todo: load weights from data/vision.
+        vision = Vision()
+        return vision
+
+# Agent's vision module
+class PretrainVision(nn.Module):
+    def __init__(self, vision_module):
+        super(PretrainVision, self).__init__()
+        self.vision_module = vision_module
+        self.fc3 = nn.Linear(500, 6)
+
+    def forward(self, x):
+        x = self.vision_module(x)
+        x = self.fc3(torch.sigmoid(x))
+        return x
 
 # Receiver's and Sender's architecture
 class SenderCifar10(nn.Module):
@@ -60,48 +87,29 @@ class ReceiverCifar10(nn.Module):
         x = self.fc(x)
         return torch.sigmoid(x)
 
-class LanguageGame(SenderReceiverRnnReinforce):
-    '''
-    Definition of the whole language game
-    todo: implement actor critics
-    '''
 
-    def __init__(
-        self,
-        sender: nn.Module,
-        receiver: nn.Module,
-        loss: Callable,
-        sender_entropy_coeff: float = 0.0,
-        receiver_entropy_coeff: float = 0.0,
-        length_cost: float = 0.0,
-        baseline_type: Baseline = MeanBaseline,
-        train_logging_strategy: LoggingStrategy = None,
-        test_logging_strategy: LoggingStrategy = None,
-    ):
-    super().__init__(
-        self,
-        sender,
-        receiver,
-        loss,
-        sender_entropy_coeff,
-        receiver_entropy_coeff,
-        length_cost,
-        baseline_type,
-        train_logging_strategy,
-        test_logging_strategy,
-    )
-    self.optimizer = torch.optim.Adam([
-        {'params': game_lstm_Cifar10_GS.sender.parameters(), 'lr': 1e-4},
-        {'params': game_lstm_Cifar10_GS.receiver.parameters(), 'lr': 1e-3}])
-    optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
-    # Callbacks
-    callbacks = []
-    callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
+def mce_loss(y_true, y_pred):
+    loss = np.mean((y_true-y_pred)**2)
+    return loss
 
-    # games trainer
-    self.trainer = core.Trainer(game=game_lstm_Cifar10_GS,
-                                           optimizer=optimizer,
-                                           train_data=train_data_loader,
-                                           validation_data=test_data_loader,
-                                           callbacks=callbacks)
+def custom_loss(sender_input, _message, _receiver_input, receiver_output, _labels, _aux_input=None, color_weight=0.8):
+    """
+    Custom loss function that weights the loss from colored pixels
+    <-> white pixels from the original image 9:1
+    """
+
+    sender_input = sender_input.view([-1, 3 * 100 * 100])
+    sender_input = sender_input.cpu().detach().numpy()
+    receiver_output = receiver_output.cpu().detach().numpy()
+
+    losses = np.zeros(len(sender_input))
+    # fucking batching screws up vectorized numpy use >_<
+    for i in range(len(sender_input)):
+        a = sender_input[i]
+        b = receiver_output[i]
+        white = np.average(mce(a[a==1],b[a==1]))
+        colour = np.average(mce(a[a<1],b[a<1]))
+        losses[i] = color_weight*colour+(1-color_weight)*white
+
+    return torch.from_numpy(losses), {}
