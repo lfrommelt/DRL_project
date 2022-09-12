@@ -1,5 +1,6 @@
 #data
-.data/
-.data/*
+#./data/
+data/*
+models/*
 #only jupytext or scripts
 *.ipynb
