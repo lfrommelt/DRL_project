@@ -4,3 +4,9 @@ data/*
 models/*
 #only jupytext or scripts
 *.ipynb
+#no results, yet
+*.png
+# fuck pycharm, please!
+.idea/
+.idea/*
+rlg/__pycache__

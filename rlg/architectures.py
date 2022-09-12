@@ -1,6 +1,14 @@
+from rlg.loss import *
+import torch.nn as nn
+import torch
 
-class Hyperparameters():
-    loss = mce_loss
+class Hyperparameters:
+    loss = custom_loss
+    # Game's parameter
+    hidden_size = 64
+    emb_size = 32
+    vocab_size = 6
+    max_len = 10
     # todo: params
 
 
@@ -57,7 +65,7 @@ class PretrainVision(nn.Module):
 
 # Receiver's and Sender's architecture
 class SenderCifar10(nn.Module):
-    def __init__(self, vision, output_size):
+    def __init__(self, vision, output_size=Hyperparameters.hidden_size):
         super(SenderCifar10, self).__init__()
         self.fc = nn.Linear(500, output_size)
         self.vision = vision
@@ -69,7 +77,7 @@ class SenderCifar10(nn.Module):
         return x
 
 class ReceiverCifar10(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self, input_size=Hyperparameters.hidden_size):
         super(ReceiverCifar10, self).__init__()
         self.fc0 = nn.Linear(input_size, 1000)
         self.activate1 = nn.LeakyReLU()
@@ -86,30 +94,3 @@ class ReceiverCifar10(nn.Module):
         x = self.activate2(x)
         x = self.fc(x)
         return torch.sigmoid(x)
-
-
-
-def mce_loss(y_true, y_pred):
-    loss = np.mean((y_true-y_pred)**2)
-    return loss
-
-def custom_loss(sender_input, _message, _receiver_input, receiver_output, _labels, _aux_input=None, color_weight=0.8):
-    """
-    Custom loss function that weights the loss from colored pixels
-    <-> white pixels from the original image 9:1
-    """
-
-    sender_input = sender_input.view([-1, 3 * 100 * 100])
-    sender_input = sender_input.cpu().detach().numpy()
-    receiver_output = receiver_output.cpu().detach().numpy()
-
-    losses = np.zeros(len(sender_input))
-    # fucking batching screws up vectorized numpy use >_<
-    for i in range(len(sender_input)):
-        a = sender_input[i]
-        b = receiver_output[i]
-        white = np.average(mce(a[a==1],b[a==1]))
-        colour = np.average(mce(a[a<1],b[a<1]))
-        losses[i] = color_weight*colour+(1-color_weight)*white
-
-    return torch.from_numpy(losses), {}

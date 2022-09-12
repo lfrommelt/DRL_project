@@ -1,59 +1,80 @@
 import egg.core as core
+from egg.zoo.emcom_as_ssl.LARC import LARC
+
+from rlg.architectures import Hyperparameters
+from rlg.interactions_fix import fix
+#from rlg import FixedTrainer
+from rlg.trainer_fix import FixedTrainer
+from torch.nn import Module
+from torch.optim import Adam
+from torch import save
+
+#import argparse
+
+#from egg.core.util import get_opts
+
+'''def egg_is_fucked_up():
+    return {'validation_freq':10}
+
+core.util.get_opts = egg_is_fucked_up'''
+
+'''global common_opts
+common_opts = {'validation_freq':10}'''
+'''fix(core.dump_interactions)
+fix(core.Trainer.__init__)'''
 
 
-fix(core.dump_interactions)
-
-
-class LanguageGame(SenderReceiverRnnReinforce):
+class LanguageGame(core.SenderReceiverRnnReinforce):
     '''
     Definition of the whole language game
     todo: implement actor critics
     '''
 
     def __init__(
-        self,
-        sender: nn.Module,
-        receiver: nn.Module,
-        loss: Callable,
-        sender_entropy_coeff: float = 0.0,
-        receiver_entropy_coeff: float = 0.0,
-        length_cost: float = 0.0,
-        baseline_type: Baseline = MeanBaseline,
-        train_logging_strategy: LoggingStrategy = None,
-        test_logging_strategy: LoggingStrategy = None,
-    ):
-    super().__init__(
-        sender,
-        receiver,
-        loss,
-        sender_entropy_coeff,
-        receiver_entropy_coeff,
-        length_cost,
-        baseline_type,
-        train_logging_strategy,
-        test_logging_strategy,
-    ):
-        self.optimizer = torch.optim.Adam([
-            {'params': game_lstm_Cifar10_GS.sender.parameters(), 'lr': 1e-4},
-            {'params': game_lstm_Cifar10_GS.receiver.parameters(), 'lr': 1e-3}])
-        optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
+                self,
+                sender: Module,
+                receiver: Module,
+                sender_entropy_coeff: float = 0.0,
+                receiver_entropy_coeff: float = 0.0,
+                length_cost: float = 0.0,
+                ):
+
+        # wrap architectures in egg
+        sender = core.RnnSenderReinforce(sender, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size,cell="gru", max_len=Hyperparameters.max_len)
+        receiver = core.RnnReceiverDeterministic(receiver, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size,cell="gru")
+
+        # todo: could be done with entropy and so on as well
+        loss = Hyperparameters.loss
+
+        super().__init__(
+            sender,
+            receiver,
+            loss,
+            sender_entropy_coeff,
+            receiver_entropy_coeff,
+            length_cost,
+        )
+        optimizer = Adam([
+            {'params': sender.parameters(), 'lr': 1e-4},
+            {'params': receiver.parameters(), 'lr': 1e-3}])
+        self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
-        callbacks = []
-        callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
+        self.callbacks = []
+        self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
 
 
-    def train(self, n_epochs, train_data, test_data, save_file='models/reinf_Own_Game.pth'):
+    def train2(self, n_epochs, train_data, test_data, save_file='models/reinf_Own_Game.pth'):
         # games trainer
-        self.trainer = core.Trainer(game=game_lstm_Cifar10_GS,
-                                   optimizer=optimizer,
-                                   train_data=train_data_loader,
-                                   validation_data=test_data_loader,
-                                   callbacks=callbacks
+        self.trainer = core.Trainer(game=self,
+                                   optimizer=self.optimizer,
+                                   train_data=train_data,
+                                   validation_data=test_data,
+                                   callbacks=self.callbacks
                                    )
 
         self.trainer.train(n_epochs)
-        torch.save(game_lstm_Cifar10_GS.state_dict(), 'models/reinf_Own_Game_completel_new_try2.pth')
+        save(self.state_dict(), 'models/reinf_Own_Game.pth')
 
     # Easy plotting of the images
     def plot(game, test_dataset, is_gs, variable_length, is_mnist):
@@ -91,7 +112,7 @@ class LanguageGame(SenderReceiverRnnReinforce):
             titles.append(title)
         return plots, titles
 
-    def plot(self, name = reinf_Own_Game):
+    def plot(self, name = "reinf_Own_Game"):
         plots_game_lstm_Cifar10_GS, titles_game_lstm_Cifar10_GS= _plot(game_lstm_Cifar10_GS, train_data_loader, is_gs=False,
                                                                        variable_length=True, is_mnist=False)
         """

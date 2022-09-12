@@ -1,4 +1,9 @@
 import re
+import os
+from tqdm import tqdm
+import numpy as np
+from PIL.Image import open as im_open
+import torch
 
 def load_dataset(split=8/10):
     '''
@@ -8,11 +13,11 @@ def load_dataset(split=8/10):
     '''
     custom_train_data = {}
     files = [file for file in os.listdir("data/continuous/")
-            if re.search(r'*.png', val)]
+            if re.search(r'.*\.jpg', file)]
     try:
         n_train = split[0]
         n_test = split[1]
-    except IndexError:
+    except TypeError:
         n_train = int(len(files)*split)
         n_test = int(len(files)*(1-split))
     # Load the train and test dataset and normalize the images
@@ -20,10 +25,10 @@ def load_dataset(split=8/10):
     n_train = 2000
     n_test = 500
   # [2:]
-    for i in tqdm(range(n_train):
+    for i in tqdm(range(n_train)):
         file = files[i]
         im = np.moveaxis(
-            image.imread("data/continuous/" + file), 2,
+            np.array(im_open("data/continuous/" + file)), 2,
             0) /255.
         y = [float(value) for value in file[:-4].split(sep=', ')]
         custom_train_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))
@@ -33,7 +38,7 @@ def load_dataset(split=8/10):
     for i in tqdm(range(len(test_files))):
         file = test_files[i]
         im = np.moveaxis(
-            image.imread("data/continuous/" + file), 2,
+            np.array(im_open("data/continuous/" + file)), 2,
             0) /255.
         y = [float(value) for value in file[:-4].split(sep=', ')]
         custom_test_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))

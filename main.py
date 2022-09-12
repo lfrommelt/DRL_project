@@ -1,32 +1,26 @@
-import egg.core as core
-from interactions_fix import fix
-
+import sys
+import rlg
+from egg import core
 
 def main(args):
     # todo: put hyperparams in args; probably we will not use main a lot, though
-    vision = Vision.load()
+
+    core.util.init()
+    vision = rlg.Vision.load()
 
     # Agent's and game's setup
-    senderCifar10 = SenderCifar10(class_prediction.vision_module, hidden_size)
-    receiverCifar10 = ReceiverCifar10(hidden_size)
+    sender = rlg.SenderCifar10(vision)
+    receiver= rlg.ReceiverCifar10()
 
-    sender_lstm_Cifar10_GS = core.RnnSenderReinforce(senderCifar10, vocab_size, emb_size,hidden_size,
-                                       cell="gru", max_len=10)
+    game = rlg.LanguageGame(sender, receiver, sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005)
 
-    receiver_lstm_Cifar10_GS = core.RnnReceiverDeterministic(receiverCifar10, vocab_size, emb_size,
-                        hidden_size, cell="gru")
-
-    game = Game(sender_lstm_Cifar10_GS,
-                receiver_lstm_Cifar10_GS,
-                custom_loss2, sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005
-                )
-
-    train_data_loader, test_data_loader = load_dataset
+    train_data_loader, test_data_loader = rlg.load_dataset((5,5))
 
     # train for 20 epochs
-    game.train(20, train_data, test_data)
+    # train2 because some weird namespace fuckups
+    game.train2(1, train_data_loader, test_data_loader)
 
 
 print('hello')
-if name == "__main__":
+if __name__ == "__main__":
     main(sys.argv)

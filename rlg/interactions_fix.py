@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Dict, Iterable, Optional
 
 import torch.distributed as distrib
+# todo: smarter way of importing torch
+import torch
 
 from egg.core.batch import Batch
 from egg.core import Interaction
@@ -64,4 +66,5 @@ def _dump_interactions(
     return interaction
 
 def fix(original_function):
+    print("fixing interactions")
     original_function = _dump_interactions
