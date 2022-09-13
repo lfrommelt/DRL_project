@@ -22,9 +22,7 @@ def load_dataset(split=8/10):
         n_test = int(len(files)*(1-split))
     # Load the train and test dataset and normalize the images
     # todo: randomize with seed
-    n_train = 2000
-    n_test = 500
-  # [2:]
+
     for i in tqdm(range(n_train)):
         file = files[i]
         im = np.moveaxis(

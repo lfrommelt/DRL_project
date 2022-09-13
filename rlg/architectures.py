@@ -1,6 +1,9 @@
 from rlg.loss import *
 import torch.nn as nn
 import torch
+from egg import core
+from os.path import normpath
+import os
 
 class Hyperparameters:
     loss = custom_loss
@@ -45,9 +48,12 @@ class Vision(nn.Module):
 
         return x
 
+    def save(self, name):
+        torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
+
     @staticmethod
     def load(name="vision"):
-        # todo: load weights from data/vision.
+        # todo: load weights from /models.
         vision = Vision()
         return vision
 
@@ -62,6 +68,32 @@ class PretrainVision(nn.Module):
         x = self.vision_module(x)
         x = self.fc3(torch.sigmoid(x))
         return x
+
+    # function to check the accuracy of the vision-modules
+    def check_accuracy(self, data_loader):
+        mean_loss = 0
+        num_samples = 0
+        model = self
+        model.eval()
+
+        device = core.get_opts().device
+
+
+        with torch.no_grad():
+            for x, y in data_loader:
+                x = x.to(device=device)
+                y = y.to(device=device)
+                score = model(x)
+                loss = nn.functional.l1_loss(score, y)
+                mean_loss += loss.mean().item()
+                num_samples += 1
+
+            #print('Got: ', mean_loss / num_samples)
+        return mean_loss
+
+    def save(self, name):
+        print(os.getcwd())
+        torch.save(self.state_dict(), normpath('models/'+name+'.trainable_vision'))
 
 # Receiver's and Sender's architecture
 class SenderCifar10(nn.Module):
