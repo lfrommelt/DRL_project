@@ -51,12 +51,6 @@ class Vision(nn.Module):
     def save(self, name):
         torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
 
-    @staticmethod
-    def load(name="vision"):
-        # todo: load weights from /models.
-        vision = Vision()
-        return vision
-
 # Agent's vision module
 class PretrainVision(nn.Module):
     def __init__(self, vision_module):
@@ -68,6 +62,16 @@ class PretrainVision(nn.Module):
         x = self.vision_module(x)
         x = self.fc3(torch.sigmoid(x))
         return x
+
+    @staticmethod
+    def load():
+        # todo: load weights from data/vision.
+        vision = Vision()
+        class_prediction = PretrainVision(vision)
+        class_prediction.load_state_dict(
+            torch.load('./models/class_prediction.pth', map_location=torch.device('cpu')))
+
+        return class_prediction
 
     # function to check the accuracy of the vision-modules
     def check_accuracy(self, data_loader):
