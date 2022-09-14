@@ -77,7 +77,7 @@ class PretrainVision(nn.Module):
 
     # function to check the accuracy of the vision-modules
     def check_accuracy(self, data_loader):
-        mean_loss = 0
+        losses = 0
         num_samples = 0
         model = self
         model.eval()
@@ -91,10 +91,11 @@ class PretrainVision(nn.Module):
                 y = y.to(device=device)
                 score = model(x)
                 loss = nn.functional.l1_loss(score, y)
-                mean_loss += loss.mean().item()
+                losses += loss.mean().item()
                 num_samples += 1
 
             #print('Got: ', mean_loss / num_samples)
+        mean_loss = losses/num_samples
         return mean_loss
 
     def save(self, name):
