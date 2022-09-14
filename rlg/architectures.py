@@ -115,18 +115,8 @@ class SenderCifar10(nn.Module):
 class ReceiverCifar10(nn.Module):
     def __init__(self, input_size=Hyperparameters.hidden_size):
         super(ReceiverCifar10, self).__init__()
-        self.fc0 = nn.Linear(input_size, 1000)
-        self.activate1 = nn.LeakyReLU()
-
-        self.fc05 = nn.Linear(1000, 5000)
-        self.activate2 = nn.LeakyReLU()
-
-        self.fc = nn.Linear(5000, 3 * 100 * 100)
+        self.fc = nn.Linear(input_size, 3 * 100 * 100)
 
     def forward(self, channel_input, receiver_input=None, aux_input=None):
-        x = self.fc0(channel_input)
-        x = self.activate1(x)
-        x = self.fc05(x)
-        x = self.activate2(x)
-        x = self.fc(x)
+        x = self.fc(channel_input)
         return torch.sigmoid(x)
