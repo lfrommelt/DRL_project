@@ -6,7 +6,7 @@ def main(args):
     # todo: put hyperparams in args; probably we will not use main a lot, though
 
     core.util.init()
-    vision = rlg.Vision.load()
+    vision = rlg.PretrainVision.load().vision_module
 
     # Agent's and game's setup
     sender = rlg.SenderCifar10(vision)
