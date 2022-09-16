@@ -11,7 +11,7 @@ def custom_loss(sender_input, _message, _receiver_input, receiver_output, _label
     """
     sender_input = sender_input.view([-1, 3 * 100 * 100])
     losses = torch.zeros(len(sender_input))
-    
+
     for i in range(len(sender_input)):
         a = sender_input[i]
         b = receiver_output[i]
