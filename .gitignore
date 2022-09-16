@@ -10,3 +10,5 @@ models/*
 .idea/
 .idea/*
 rlg/__pycache__
+*.ipynb*
+*.txt

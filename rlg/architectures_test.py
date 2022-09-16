@@ -179,14 +179,11 @@ class VisionTest3(nn.Module):
         torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
 
     @staticmethod
-    def load(name="vision"):
-        # todo: load weights from /models.
-        class_prediction = PretrainVision(vision)  # note that we pass vision - which we want to pretrain
-        class_prediction = class_prediction.to(device)
+    def load(name = 'class_prediction.pth'):
+        vision = VisionTest3()
+        vision.load_state_dict(
+            torch.load('./models/'+name, map_location=torch.device('cpu')))
 
-        # class_prediction.load_state_dict(torch.load('Class_prediction_very_simple3.pth', map_location=torch.device('cpu')))
-
-        vision = VisionTest()
         return vision
 
 # Agent's vision module
@@ -230,16 +227,16 @@ class PretrainVisionTest3(nn.Module):
         torch.save(self.state_dict(), normpath('models/'+name+'.trainable_vision'))
 
     @staticmethod
-    def load(name="vision"):
+    def load(name = 'class_prediction.pth'):
         # todo: load weights from /models.
 
         device = core.get_opts().device
-        vision = TestVision3()
+        vision = VisionTest3()
 
-        class_prediction = PretrainVisionTest3(vision)  # note that we pass vision - which we want to pretrain
-        class_prediction = class_prediction.to(device)
+        class_prediction = PretrainVisionTest3(vision)
+        class_prediction = class_prediction.to(device) # was macht das eig? brauchen wir das?
 
-        class_prediction.load_state_dict(torch.load(normpath('models/'+name+'.trainable_vision'), map_location=torch.device(device)))
+        class_prediction.load_state_dict(torch.load(normpath('models/'+name), map_location=torch.device(device)))
 
         return class_prediction
 

@@ -53,6 +53,14 @@ class Vision(nn.Module):
     def save(self, name):
         torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
 
+    @staticmethod
+    def load(name = 'class_prediction.pth'):
+        vision = Vision()
+        vision.load_state_dict(
+            torch.load('./models/'+name, map_location=torch.device('cpu')))
+
+        return vision
+
 # Agent's vision module
 class PretrainVision(nn.Module):
     def __init__(self, vision_module):
@@ -106,7 +114,7 @@ class PretrainVision(nn.Module):
 class SenderCifar10(nn.Module):
     def __init__(self, vision, output_size=Hyperparameters.hidden_size):
         super(SenderCifar10, self).__init__()
-        self.fc = nn.Linear(500, output_size)
+        self.fc = nn.Linear(64, output_size)
         self.vision = vision
 
     def forward(self, x, aux_input=None):
