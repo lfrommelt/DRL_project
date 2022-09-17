@@ -32,6 +32,8 @@ class EntropyLogger(core.Callback):
     entropy_log = []
     def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
         EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
+        with open('log.txt','a') as file:
+            print(EntropyLogger.entropy_log[-1], file=file)
 
 
 class LanguageGame(core.SenderReceiverRnnReinforce):
