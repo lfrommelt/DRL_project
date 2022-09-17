@@ -10,7 +10,7 @@ from torch.nn import Module
 from torch.optim import Adam
 from torch import save
 import torch
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 #import argparse
 
@@ -60,12 +60,11 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         optimizer = Adam([
             {'params': sender.parameters(), 'lr': 1e-4},
             {'params': receiver.parameters(), 'lr': 1e-3}])
-        self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
+     #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
         self.callbacks = []
         self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
-
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
         # games trainer
