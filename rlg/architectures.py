@@ -8,8 +8,8 @@ import os
 class Hyperparameters:
     loss = custom_loss
     # Game's parameter
-    hidden_size = 64
-    emb_size = 32
+    hidden_size = 256
+    emb_size = 128
     vocab_size = 6
     max_len = 10
     # todo: params
@@ -66,7 +66,7 @@ class PretrainVision(nn.Module):
     def __init__(self, vision_module):
         super(PretrainVision, self).__init__()
         self.vision_module = vision_module
-        self.fc3 = nn.Linear(500, 6)
+        self.fc = nn.Linear(500, 6)
 
     def forward(self, x):
         x = self.vision_module(x)
@@ -114,7 +114,7 @@ class PretrainVision(nn.Module):
 class SenderCifar10(nn.Module):
     def __init__(self, vision, output_size=Hyperparameters.hidden_size):
         super(SenderCifar10, self).__init__()
-        self.fc = nn.Linear(64, output_size)
+        self.fc = nn.Linear(500, output_size)
         self.vision = vision
 
     def forward(self, x, aux_input=None):
