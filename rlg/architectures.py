@@ -10,7 +10,7 @@ class Hyperparameters:
     # Game's parameter
     hidden_size = 256
     emb_size = 128
-    vocab_size = 6
+    vocab_size = 5
     max_len = 10
     # todo: params
 
@@ -53,13 +53,13 @@ class Vision(nn.Module):
     def save(self, name):
         torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
 
-    @staticmethod
-    def load(name = 'class_prediction.pth'):
-        vision = Vision()
-        vision.load_state_dict(
-            torch.load('./models/'+name, map_location=torch.device('cpu')))
+ #   @staticmethod
+  #  def load(name = 'class_prediction.pth'):
+   #     vision = Vision()
+    #    vision.load_state_dict(
+     #       torch.load('./models/'+name, map_location=torch.device('cpu')))
 
-        return vision
+      #  return vision
 
 # Agent's vision module
 class PretrainVision(nn.Module):
@@ -70,18 +70,18 @@ class PretrainVision(nn.Module):
 
     def forward(self, x):
         x = self.vision_module(x)
-        x = self.fc3(torch.sigmoid(x))
+        x = self.fc(torch.sigmoid(x))
         return x
 
-    @staticmethod
-    def load():
-        # todo: load weights from data/vision.
-        vision = Vision()
-        class_prediction = PretrainVision(vision)
-        class_prediction.load_state_dict(
-            torch.load('./models/class_prediction.pth', map_location=torch.device('cpu')))
+  #  @staticmethod
+   # def load():
+    #    # todo: load weights from data/vision.
+     #   vision = Vision()
+      #  class_prediction = PretrainVision(vision)
+       # class_prediction.load_state_dict(
+        #    torch.load('./models/class_prediction.pth', map_location=torch.device('cpu')))
 
-        return class_prediction
+        #return class_prediction
 
     # function to check the accuracy of the vision-modules
     def check_accuracy(self, data_loader):

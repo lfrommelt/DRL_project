@@ -2,7 +2,6 @@ import egg.core as core
 from egg.zoo.emcom_as_ssl.LARC import LARC
 
 from rlg.architectures import *
-from rlg.architectures_test import *
 from rlg.interactions_fix import fix
 #from rlg import FixedTrainer
 from rlg.trainer_fix import FixedTrainer
@@ -57,7 +56,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
             receiver_entropy_coeff,
             length_cost,
         )
-        optimizer = Adam([
+        self.optimizer = Adam([
             {'params': sender.parameters(), 'lr': 1e-4},
             {'params': receiver.parameters(), 'lr': 1e-3}])
      #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
@@ -76,7 +75,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
                                    )
 
         self.trainer.train(n_epochs)
-        save(self.state_dict(), 'models/' + save_name + '.pth')
+     #   save(self.state_dict(), 'models/' + save_name + '.pth')
 
 
     def get_trainer(self, train_data, test_data):
@@ -89,19 +88,19 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         return self.trainer
 
 
-    @staticmethod
-    def load(name = 'default', sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005, vision_class = Vision):
-        vision = vision_class()
+ #   @staticmethod
+  #  def load(name = 'default', sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005, vision_class = PretrainVision):
+   #     vision = vision_class()
 
         # Agent's and game's setup
-        sender = SenderCifar10(vision)
-        receiver = ReceiverCifar10()
+  #      sender = SenderCifar10(vision.vision_module)
+   #     receiver = ReceiverCifar10()
 
-        game = LanguageGame(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
-        game.load_state_dict(
-            torch.load('./models/'+name+'.pth', map_location=core.get_opts().device))
-        game.eval()
-        return game
+    #    game = LanguageGame(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
+   #     game.load_state_dict(
+    #        torch.load('./models/'+name+'.pth', map_location=core.get_opts().device))
+     #   game.eval()
+      #  return game
 
     # Easy plotting of the images
     def get_output(self, _, test_dataset):

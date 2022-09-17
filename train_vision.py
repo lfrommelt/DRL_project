@@ -1,10 +1,7 @@
 import sys
 import rlg
 from egg import core
-import torch
-from torchsummary import summary
 import torch.nn.functional as F
-import time
 import re
 import os
 from tqdm import tqdm
@@ -12,7 +9,7 @@ import numpy as np
 from PIL.Image import open as im_open
 import torch
 
-def load_relabeled_dataset(split=8/10):
+def load_dataset(split=8/10):
     '''
     Load train and test dataloaders from ./data
     Parameters:
@@ -36,7 +33,6 @@ def load_relabeled_dataset(split=8/10):
             np.array(im_open("data/continuous/" + file)), 2,
             0) /255.
         y = [float(value) for value in file[:-4].split(sep=', ')]
-        y = relabel(y)
         custom_train_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))
 
     custom_test_data = {}
@@ -47,7 +43,6 @@ def load_relabeled_dataset(split=8/10):
             np.array(im_open("data/continuous/" + file)), 2,
             0) /255.
         y = [float(value) for value in file[:-4].split(sep=', ')]
-        y = relabel(y)
         custom_test_data[i] = (torch.tensor(im).to(dtype=torch.float32), torch.tensor(y))
     # create the dataloaders
     train_data_loader = torch.utils.data.DataLoader(custom_train_data, batch_size=32, shuffle=True)
@@ -57,13 +52,6 @@ def load_relabeled_dataset(split=8/10):
 
     return train_data_loader, test_data_loader
 
-def relabel(target):
-    # one-hot encoding for shapes (and outline?)
-    (x,y,shape,size,color,outline) = target
-    return [x,y,size,color,outline,
-            1 if shape < 0.3 else 0,
-            1 if shape > 0.3 and shape > 0.6 else 0,
-            1 if shape > 0.6 else 0,]
 
 
 def main(args):
@@ -72,16 +60,13 @@ def main(args):
 
     device = core.get_opts().device
 
-    #test model2
-    class_prediction = rlg.PretrainVisionTest4(rlg.VisionTest4())
+    class_prediction = rlg.PretrainVision(rlg.Vision())
     optimizer = core.build_optimizer(class_prediction.parameters())
     class_prediction = class_prediction.to(device)
-    summary(class_prediction, (3,100,100))
 
-    train_data_loader, test_data_loader = load_relabeled_dataset(8/10)
+    train_data_loader, test_data_loader = load_dataset(8/10)
 
-    st = time.time()
-    for epoch in range(10):
+    for epoch in range(15):
         mean_loss, n_batches = 0, 0
         for batch_idx, (data, target) in enumerate(train_data_loader):
             data, target = data.to(device), target.to(device)
@@ -96,14 +81,9 @@ def main(args):
         print(f'Train Epoch: {epoch}, mean loss: {mean_loss / n_batches}')
         test_loss = class_prediction.check_accuracy(test_data_loader)
         print(f'Loss on testset: {test_loss}')
-        with open("log_gap2.txt", 'a') as file:
-            print(f'Train Epoch: {epoch}, mean loss: {mean_loss / n_batches}', file=file)
-            print(f'Loss on testset: {test_loss}', file=file)
-    class_prediction.save("gap4")
-    t = time.time()-st
-    print(f"training wall time: {t}")
-    with open("log_gap2.txt", 'a') as file:
-        print(f"training wall time: {t}", file=file)
+
+    class_prediction.save("newly_trained")
+
 
 
 
