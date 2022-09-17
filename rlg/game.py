@@ -2,14 +2,16 @@ import egg.core as core
 from egg.zoo.emcom_as_ssl.LARC import LARC
 
 from rlg.architectures import *
-from rlg.interactions_fix import fix
+from rlg.architectures_test import *
+#from rlg.interactions_fix import fix
 #from rlg import FixedTrainer
 from rlg.trainer_fix import FixedTrainer
 from torch.nn import Module
 from torch.optim import Adam
 from torch import save
 import torch
-import matplotlib.pyplot as plt
+from egg.core import Interaction
+#import matplotlib.pyplot as plt
 
 #import argparse
 
@@ -24,6 +26,12 @@ core.util.get_opts = egg_is_fucked_up'''
 common_opts = {'validation_freq':10}'''
 '''fix(core.dump_interactions)
 fix(core.Trainer.__init__)'''
+
+
+class EntropyLogger(core.Callback):
+    entropy_log = []
+    def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
+        EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
 
 
 class LanguageGame(core.SenderReceiverRnnReinforce):
@@ -47,6 +55,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
 
         # todo: could be done with entropy and so on as well
         loss = Hyperparameters.loss
+        self.interaction_log = []
 
         super().__init__(
             sender,
@@ -56,14 +65,15 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
             receiver_entropy_coeff,
             length_cost,
         )
-        self.optimizer = Adam([
+        optimizer = Adam([
             {'params': sender.parameters(), 'lr': 1e-4},
             {'params': receiver.parameters(), 'lr': 1e-3}])
-     #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
+        self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
         self.callbacks = []
         self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
+        self.callbacks.append(EntropyLogger())
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
         # games trainer
@@ -75,7 +85,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
                                    )
 
         self.trainer.train(n_epochs)
-     #   save(self.state_dict(), 'models/' + save_name + '.pth')
+        save(self.state_dict(), 'models/' + save_name + '.pth')
 
 
     def get_trainer(self, train_data, test_data):
@@ -88,19 +98,19 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         return self.trainer
 
 
- #   @staticmethod
-  #  def load(name = 'default', sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005, vision_class = PretrainVision):
-   #     vision = vision_class()
+    @staticmethod
+    def load(name = 'default', sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005, vision_class = Vision):
+        vision = vision_class()
 
         # Agent's and game's setup
-  #      sender = SenderCifar10(vision.vision_module)
-   #     receiver = ReceiverCifar10()
+        sender = SenderCifar10(vision)
+        receiver = ReceiverCifar10()
 
-    #    game = LanguageGame(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
-   #     game.load_state_dict(
-    #        torch.load('./models/'+name+'.pth', map_location=core.get_opts().device))
-     #   game.eval()
-      #  return game
+        game = LanguageGame(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
+        game.load_state_dict(
+            torch.load('./models/'+name+'.pth', map_location=core.get_opts().device))
+        game.eval()
+        return game
 
     # Easy plotting of the images
     def get_output(self, _, test_dataset):
@@ -150,3 +160,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
             i.set_yticks([])
 
         plt.savefig(name + '_train.png')
+
+    def forward(self, sender_input, labels = None, receiver_input=None, aux_input=None):
+        return super().forward(sender_input, labels, receiver_input, aux_input)
+
