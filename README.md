@@ -12,6 +12,13 @@ EGG (Emergence of lanGuage in Games) is a toolkit for implementing referential l
 The images consist of 100x100 pixels, with three colour channels, each. The content of the images can be described in a vector, consisting of: x-coordinate, y-coordinate, shape, size, color, outline. Each of these values is normalize to the interval \[0, 1\]. The shape can be one of three categories (circle, square, triangle). For simplicity, the vector representation assumes an ordinal scaling and maps these three categories to the values 0, 0.5 and 1.0, respectively. 
 This vector representation is used as targets, for pretraining a vision module for the sender agent. The vision module mainly consists of convolution layers. After training, the final classification layer is left out and the models weights are kept fixed. That way a pretrained vision module serves as a mapping from images to abstract features, that should in theary contain all necessary information for the sender, in order to describe the images from which it came. The amount of abstract features, that the vision module extracts is the size 
 
+## Methods: REINFORCE in EGG
+The term REINFORCE is used inconsistently in the literature. Accoring to [1], it is characterize by the **RE**ward **I**ncrement being constructed of a **N**onnegative **F**actor (learning rate), **O**ffset **R**einforcement (reward - baseline) and a **C**haracteristic **E**ligibility (probability of action). 
+
+$\Delta w_{ij} = \alpha_{ij}(r-b_{ij})e_{ij}$
+
+In other sources ([2]), a baseline is not nessecary. The implementation in EGG follows the first definition [3] and adapts it to a referential language game scenario.
+
 
 ## Implementation
 
@@ -21,6 +28,13 @@ This vector representation is used as targets, for pretraining a vision module f
 
 
 ## Refs
+
+[1]: Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. Machine learning, 8(3), 229-256., https://doi.org/10.1007/BF00992696
+
+[2] Machine Learning Book
+
+[3] EGG paper
+
 
 Description:
 
