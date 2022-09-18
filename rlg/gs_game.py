@@ -28,31 +28,24 @@ common_opts = {'validation_freq':10}'''
 fix(core.Trainer.__init__)'''
 
 
-class EntropyLogger(core.Callback):
+class EntropyLoggerGS(core.Callback):
     entropy_log = []
     accumulated = []
 
-    def __init__(self, reinforce=True):
-        super().__init__()
-        self.reinforce = reinforce
-
     def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
-        if not self.reinforce:
-            EntropyLogger.entropy_log.append(self.aggregate())
-        else:
-            EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
+        EntropyLoggerGS.entropy_log.append(self.aggregate())
 
         with open('log_gs_entropy_200_128.txt', 'a') as file:
-            print(EntropyLogger.entropy_log[-1], file=file)
+            print(EntropyLoggerGS.entropy_log[-1], file=file)
 
     def on_validation_end(self, loss: float, logs: Interaction, epoch: int):
         with open('log_gs_test_loss_200_128.txt', 'a') as file:
             print(loss, file=file)
-        EntropyLogger.accumulated = []
+        EntropyLoggerGS.accumulated = []
 
     def aggregate(self):
-        entropies = ([Categorical(logits=torch.FloatTensor(logits)).entropy() for logits in EntropyLogger.accumulated])
-        EntropyLogger.accumulated = []
+        entropies = ([Categorical(logits=torch.FloatTensor(logits)).entropy() for logits in EntropyLoggerGS.accumulated])
+        EntropyLoggerGS.accumulated = []
         return torch.stack(entropies).flatten().mean()
 
 def gs_logging_wrapper(self, x, aux_input=None):
@@ -60,8 +53,8 @@ def gs_logging_wrapper(self, x, aux_input=None):
     if self.training:
         for unbatched in logits:
             probs = torch.distributions.one_hot_categorical.OneHotCategorical(logits=unbatched).probs
-            print("probs",probs)
-            EntropyLogger.accumulated.append(probs)
+            EntropyLoggerGS.accumulated.append(probs)
+
     return sequence
 
 
@@ -97,26 +90,35 @@ def _forward(self, x, aux_input=None):
 
     return sequence, logits
 
-class LanguageGame(core.SenderReceiverRnnReinforce):
+class LanguageGameGS(core.SenderReceiverRnnGS):
     '''
     Definition of the whole language game
     todo: implement actor critics
     '''
 
-    def __init__(
-                self,
-                sender: Module,
-                receiver: Module,
-                sender_entropy_coeff: float = 0.005,
-                receiver_entropy_coeff: float = 0.0,
-                length_cost: float = 0.0,
-                ):
 
-        # wrap architectures in egg
-        sender = core.RnnSenderReinforce(sender, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size, cell="gru", max_len=Hyperparameters.max_len)
-        receiver = core.RnnReceiverDeterministic(receiver, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size, cell="gru")
+    def __init__(
+            self,
+            sender: Module,
+            receiver: Module,
+            sender_entropy_coeff: float = 0.005,
+            receiver_entropy_coeff: float = 0.0,
+            length_cost: float = 0.0,
+    ):
         self.callbacks = []
-        self.callbacks.append(EntropyLogger())
+
+
+        core.RnnSenderGS.forward = gs_logging_wrapper
+        sender = core.RnnSenderGS(sender, vocab_size=Hyperparameters.vocab_size,
+                                  embed_dim=Hyperparameters.emb_size,
+                                  hidden_size=Hyperparameters.hidden_size, cell="gru",
+                                  max_len=Hyperparameters.max_len, temperature=10)
+        receiver = core.RnnReceiverGS(receiver, vocab_size=Hyperparameters.vocab_size,
+                                      embed_dim=Hyperparameters.emb_size,
+                                      hidden_size=Hyperparameters.hidden_size,
+                                      cell="gru")
+        self.callbacks.append(core.TemperatureUpdater(sender, minimum=0.8, update_frequency=1, decay=0.92))
+        self.callbacks.append(EntropyLoggerGS())
         self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
 
         # todo: could be done with entropy and so on as well
@@ -127,19 +129,18 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
             sender,
             receiver,
             loss,
-       #     sender_entropy_coeff,
-        #    receiver_entropy_coeff,
+            #     sender_entropy_coeff,
+            #    receiver_entropy_coeff,
             length_cost,
         )
 
         self.optimizer = Adam([
             {'params': sender.parameters(), 'lr': 1e-4},
             {'params': receiver.parameters(), 'lr': 1e-3}])
-     #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
+        #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
 
-        
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
         # games trainer
@@ -183,7 +184,6 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         interaction = \
             core.dump_interactions(self, test_dataset, gs=False, variable_length=True)
 
-        print(interaction.message)
         plots = []
         titles = []
         for z in range(10):
@@ -226,5 +226,3 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
             i.set_yticks([])
 
         plt.savefig(name + '_train.png')
-
-
