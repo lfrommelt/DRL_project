@@ -10,7 +10,7 @@ from torch.optim import Adam
 from torch import save
 import torch
 from egg.core import Interaction
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 #import argparse
 
@@ -58,8 +58,10 @@ class LanguageGame(core.SenderReceiverRnnGS):
                 ):
 
         # wrap architectures in egg
-        sender = core.RnnSenderGS(sender,vocab_size=Hyperparameters.vocab_size, embed_dim=Hyperparameters.emb_size,hidden_size= Hyperparameters.hidden_size,cell="gru", max_len=Hyperparameters.max_len,temperature=10)
-        receiver = core.RnnReceiverGS(receiver, vocab_size=Hyperparameters.vocab_size,embed_dim= Hyperparameters.emb_size,hidden_size= Hyperparameters.hidden_size,cell="gru")
+        sender = core.RnnSenderReinforce(sender, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size, cell="gru", max_len=Hyperparameters.max_len)
+        receiver = core.RnnReceiverDeterministic(receiver, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size, cell="gru")
+        self.callbacks = []
+        self.callbacks.append(EntropyLogger())
 
         # todo: could be done with entropy and so on as well
         loss = Hyperparameters.loss
@@ -80,11 +82,8 @@ class LanguageGame(core.SenderReceiverRnnGS):
      #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
-        self.callbacks = []
-        self.callbacks.append(core.TemperatureUpdater(self.sender,minimum=0.8,update_frequency=1,decay=0.92))
 
-        self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
-        self.callbacks.append(EntropyLogger())
+        
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
         # games trainer
@@ -172,6 +171,4 @@ class LanguageGame(core.SenderReceiverRnnGS):
 
         plt.savefig(name + '_train.png')
 
-    def forward(self, sender_input, labels = None, receiver_input=None, aux_input=None):
-        return super().forward(sender_input, labels, receiver_input, aux_input)
 
