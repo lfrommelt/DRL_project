@@ -29,14 +29,15 @@ fix(core.Trainer.__init__)'''
 
 class EntropyLogger(core.Callback):
     entropy_log = []
-    try:
-        def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
-            EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
+    #try:
+      #  def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
+            #EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
 
-            with open('log_gs_entropy_200_128.txt','a') as file:
-                print(EntropyLogger.entropy_log[-1], file=file)
-    except:
-        pass
+            #with open('log_gs_entropy_200_128.txt','a') as file:
+             #   print(EntropyLogger.entropy_log[-1], file=file)
+     #   pass
+    #except:
+     #   pass
     def on_validation_end(self, loss: float, logs: Interaction, epoch: int):
         with open('log_gs_test_loss_200_128.txt','a') as file:
             print(loss, file=file)

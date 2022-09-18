@@ -8,7 +8,7 @@ import os
 class Hyperparameters:
     loss = custom_loss
     # Game's parameter
-    hidden_size = 200
+    hidden_size = 256
     emb_size = 128
     vocab_size = 4
     max_len = 5
