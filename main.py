@@ -15,12 +15,13 @@ def main(args):
     sender = rlg.SenderCifar10(class_prediction.vision_module)
     receiver= rlg.ReceiverCifar10()
 
-    game = rlg.LanguageGame(sender, receiver, sender_entropy_coeff=0.005, receiver_entropy_coeff=0.000)
-    game.load_state_dict(torch.load('./models/reinf_Own_Game_230_epochs_256_128.pth'))
+    game = rlg.LanguageGame(sender, receiver)#, sender_entropy_coeff=0.005, receiver_entropy_coeff=0.000)
+  #  game.load_state_dict(torch.load('./models/reinf_Own_Game_230_epochs_256_128.pth'))
     train_data_loader, test_data_loader = rlg.load_dataset(0.8)
   #  game = rlg.LanguageGame.load(name="reinf_Own_Game_230_epochs_256_128")
     # train for 20 epochs and automatically save resulting model in default way
-    game.train2(1, train_data_loader, test_data_loader)
+    game.train2(50, train_data_loader, test_data_loader)
+   # game.plot(test_data_loader)
  #   print('Original test loss:', game.trainer.eval(test_data_loader)[0])
 
     # default loading needs no arguments at all

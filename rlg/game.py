@@ -2,7 +2,6 @@ import egg.core as core
 from egg.zoo.emcom_as_ssl.LARC import LARC
 
 from rlg.architectures import *
-from rlg.architectures_test import *
 #from rlg.interactions_fix import fix
 #from rlg import FixedTrainer
 from rlg.trainer_fix import FixedTrainer
@@ -11,7 +10,7 @@ from torch.optim import Adam
 from torch import save
 import torch
 from egg.core import Interaction
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 #import argparse
 
@@ -30,13 +29,19 @@ fix(core.Trainer.__init__)'''
 
 class EntropyLogger(core.Callback):
     entropy_log = []
-    def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
-        EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
-        with open('log.txt','a') as file:
-            print(EntropyLogger.entropy_log[-1], file=file)
+    try:
+        def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
+            EntropyLogger.entropy_log.append(logs.aux['sender_entropy'].mean())
 
+            with open('log_gs_entropy_200_128.txt','a') as file:
+                print(EntropyLogger.entropy_log[-1], file=file)
+    except:
+        pass
+    def on_validation_end(self, loss: float, logs: Interaction, epoch: int):
+        with open('log_gs_test_loss_200_128.txt','a') as file:
+            print(loss, file=file)
 
-class LanguageGame(core.SenderReceiverRnnReinforce):
+class LanguageGame(core.SenderReceiverRnnGS):
     '''
     Definition of the whole language game
     todo: implement actor critics
@@ -52,8 +57,8 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
                 ):
 
         # wrap architectures in egg
-        sender = core.RnnSenderReinforce(sender, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size,cell="gru", max_len=Hyperparameters.max_len)
-        receiver = core.RnnReceiverDeterministic(receiver, Hyperparameters.vocab_size, Hyperparameters.emb_size, Hyperparameters.hidden_size,cell="gru")
+        sender = core.RnnSenderGS(sender,vocab_size=Hyperparameters.vocab_size, embed_dim=Hyperparameters.emb_size,hidden_size= Hyperparameters.hidden_size,cell="gru", max_len=Hyperparameters.max_len,temperature=10)
+        receiver = core.RnnReceiverGS(receiver, vocab_size=Hyperparameters.vocab_size,embed_dim= Hyperparameters.emb_size,hidden_size= Hyperparameters.hidden_size,cell="gru")
 
         # todo: could be done with entropy and so on as well
         loss = Hyperparameters.loss
@@ -63,17 +68,20 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
             sender,
             receiver,
             loss,
-            sender_entropy_coeff,
-            receiver_entropy_coeff,
+       #     sender_entropy_coeff,
+        #    receiver_entropy_coeff,
             length_cost,
         )
-        optimizer = Adam([
+
+        self.optimizer = Adam([
             {'params': sender.parameters(), 'lr': 1e-4},
             {'params': receiver.parameters(), 'lr': 1e-3}])
-        self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
+     #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
         self.callbacks = []
+        self.callbacks.append(core.TemperatureUpdater(self.sender,minimum=0.8,update_frequency=1,decay=0.92))
+
         self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
         self.callbacks.append(EntropyLogger())
 
@@ -122,7 +130,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         print(interaction.message)
         plots = []
         titles = []
-        for z in range(8):
+        for z in range(10):
             src = interaction.sender_input[z].permute(1, 2, 0)
             dst = interaction.receiver_output[z].view(3, 100, 100).permute(1, 2, 0)
             interaction_message = interaction.message[z]
