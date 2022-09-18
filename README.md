@@ -1,16 +1,16 @@
 # Referential Language Game with Compositional Inputs
 
-## Introduction
+## Introduction & Motivation
+The study of emergent languages in multi agent referential games can be used to gain insight into the emergence of natural languages. The idea comes from referential games [4]. In it's most basic version, two agents must jointly solve a task: A **sender** agent is presented with some input, for example an image. Based on this input, it generates a **message**. The message is send to a receiver agent, who has to perform an action (for example, point to the correct image among other distractor images). The message is composed of **discrete** symbols, mimicing natural language (i.e. words, as opposed to a continuos value). The networks are rewarded if the task is successful. After some training, a **communication protocol** has emergered. This communication protocol can be seen as an emergent language and analysed in terms of natural language's features, like compositionality, ability to generalise or learnability.
 
-### Motivation
-
+We designed and implemented a referential game where the sender agent sees images by means of a **Convolutional Neural Network** (CNN). The CNN serves as a feature extractor. The extracted features are then the input to a **Recurrent Neural Network** (RNN) which generates a message. This message is sent to a receiver who decodes it using another RNN. The output of this RNN is given to a **Fully Connected Feed Forward Network** that generates an image based on the input given.
 
 ### Literature
 
 ## Methods: Reinforce with EGG
-EGG (Emergence of lanGuage in Games) [3] is a toolkit for implementing referential language games. In each of these games a communications protocol (language) emerges from the interaction of two agents. The first agent (sender) encodes an input (for example an image) into a sentence with a fixed maximal length, that consists of symbols from a discrete alphabet. This message is the input of the receiver agent. In one version the task for the receiver is then, to either choose the input image from a set that additionally includes distractor images (discrimination). In the version, that is implemented here, the task of the receiver is to recreate the original image (reconstruction).
+EGG (Emergence of lanGuage in Games) [3] is a toolkit developed by Facebook for implementing referential language games. The games can be divided into two categories (I) Discrimination, here the receiver agent has to choose the coorect image from a set of images that additionaly includes distractor images. (II) Reconstruction, in this version, which is implemented here, the task of the receiver is to recreate the original image.
 
-The images consist of 100x100 pixels, with three colour channels, each. The content of the images can be described in a vector, consisting of: x-coordinate, y-coordinate, shape, size, color, outline. Each of these values is normalize to the interval \[0, 1\]. The shape can be one of three categories (circle, square, triangle). For simplicity, the vector representation assumes an ordinal scaling and maps these three categories to the values 0, 0.5 and 1.0, respectively. 
+We created a set of images where each image is of size 100x100 pixels and with three colour channels. The content of the images consist of: a shape, the shapes center in terms of x-coordinate and y-coordinate, the shape's size size, color, and the existence of an outline. Each of these features is mapped onto the interval \[0, 1\]. The shape can be one of three categories (circle, square, triangle). For simplicity, the vector representation assumes an ordinal scaling and maps these three categories to the values 0, 0.5 and 1.0, respectively. This means one image is represented as a vector if size 6 with each element in the intervall \[0,1\]
 This vector representation is used as targets, for pretraining a vision module for the sender agent. The vision module mainly consists of convolution layers. After training, the final classification layer is left out and the models weights are kept fixed. That way a pretrained vision module serves as a mapping from images to abstract features, that should in theary contain all necessary information for the sender, in order to describe the images from which it came. The abstract features, that the vision module extracts are sent to a linear layer, that maps them to the hidden size of the senders GRU. Vision module and linear layer together are considered the "agent" by EGG. The GRU outputs a probability distribution over the alphabet of the language game.
 
 The training algorithm is another choice that EGG offers. Since the message consists by definition of discrete symbols a means of translating (i.e. sampling) a differential NN output (i.e. a categorical probability distribution) into categories is necessary. A natural approach for doing this is interpreting the discrete symbols as a discrete action space of the sender agent. Therefore the sender agent can be trained with reinforcement learning. It is also possible to do so with the receiver and interpret its output as probability distribution. This can make sense for categorical outputs like in the discrimination version of the task.
@@ -47,6 +47,8 @@ During training and after each epoch a backup of the whole `LanguageGame` instan
 [3] Kharitonov, E., Chaabouni, R., Bouchacourt, D., & Baroni, M. (2019). EGG: a toolkit for research on Emergence of lanGuage in Games. EMNLP.
 
 [4] Weaver, L., & Tao, N. (2013). The optimal reward baseline for gradient-based reinforcement learning. arXiv preprint arXiv:1301.2315.
+
+[4] David Lewis. Convention: A philosophical study. 1969
 
 Description:
 
