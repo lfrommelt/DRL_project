@@ -23,6 +23,7 @@ def main(args):
     game.train2(20, train_data_loader2, test_data_loader)
     del (train_data_loader2)
     game.train2(20, train_data_loader3, test_data_loader)
+    EntropyLogger.entropy_log
 
    # game.plot(test_data_loader)
 

@@ -51,7 +51,7 @@ class EntropyLogger(core.Callback):
         EntropyLogger.accumulated = []
 
     def aggregate(self):
-        entropies = ([Categorical(logits=torch.FloatTensor(logits)).entropy() for logits in EntropyLogger.accumulated])
+        entropies = torch.FloatTensor([Categorical(logits=torch.FloatTensor(logits)).entropy() for logits in EntropyLogger.accumulated])
         EntropyLogger.accumulated = []
         return torch.stack(entropies).flatten().mean()
 

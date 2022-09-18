@@ -4,6 +4,7 @@
 
 ### Motivation
 
+
 ### Literature
 
 ## Methods: Reinforce with EGG
@@ -30,6 +31,8 @@ The baseline, that EGG uses is the average of all previously recored rewards. In
 
 Usage examples for training the game can be found in `main.py` and an exemple evaluation in `bla.ipynb`. Pretrained models can be loaded from `/models`. For usage of individual classes and functions, please refer to the docstrings.
 
+During training and after each epoch a backup of the whole `LanguageGame` instance is saved in `default.pth`
+
 ## Results
 
 ## Discussion
@@ -37,7 +40,7 @@ Usage examples for training the game can be found in `main.py` and an exemple ev
 
 ## Refs
 
-[1]: Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. Machine learning, 8(3), 229-256., https://doi.org/10.1007/BF00992696
+[1] Williams, R. J. (1992). Simple statistical gradient-following algorithms for connectionist reinforcement learning. Machine learning, 8(3), 229-256., https://doi.org/10.1007/BF00992696
 
 [2] Sutton, R.S., & Barto, A.G. (2005). Reinforcement Learning: An Introduction. IEEE Transactions on Neural Networks, 16, 285-286.
 
