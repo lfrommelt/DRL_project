@@ -1,5 +1,5 @@
 # ipynb gedöns
-*.checkpoints
+*checkpoints
 # fuck pycharm, please!
 .idea/
 .idea/*
