@@ -1,14 +1,6 @@
-#data
-#./data/
-data/*
-models/*
-#only jupytext or scripts
-*.ipynb
-#no results, yet
-*.png
+# ipynb gedöns
+*.checkpoints
 # fuck pycharm, please!
 .idea/
 .idea/*
 rlg/__pycache__
-*.ipynb*
-*.txt

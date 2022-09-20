@@ -1,13 +1,21 @@
 # Referential Language Game with Compositional Inputs
 
 ## Introduction & Motivation
-The study of emergent languages in multi agent referential games can be used to gain insight into the emergence of natural languages. The idea comes from referential games [4]. In it's most basic version, two agents must jointly solve a task: A **sender** agent is presented with some input, for example an image. Based on this input, it generates a **message**. The message is send to a receiver agent, who has to perform an action (for example, point to the correct image among other distractor images). The message is composed of **discrete** symbols, mimicing natural language (i.e. words, as opposed to a continuos value). The networks are rewarded if the task is successful. After some training, a **communication protocol** has emergered. This communication protocol can be seen as an emergent language and analysed in terms of natural language's features, like compositionality, ability to generalise or learnability.
+The study of emergent languages in multi agent referential games can be used to gain insight into the emergence of natural languages. The idea comes from referential games [5]. In it's most basic version, two agents must jointly solve a task: A **sender** agent is presented with some input, for example an image. Based on this input, it generates a **message**. The message is send to a receiver agent, who has to perform an action (for example, point to the correct image among other distractor images). The message is composed of **discrete** symbols, mimicing natural language (i.e. words, as opposed to a continuos value). The networks are rewarded if the task is successful. After some training, a **communication protocol** has emergered. This communication protocol can be seen as an emergent language and analysed in terms of natural language's features, like compositionality, ability to generalise or learnability.
+
+
+<figure role="group">
+  <img src="./eval/fig1.png">
+  <figcaption>
+    Fig.1 The image on the left was presented to the sender. The sender, then, created the message [2, 1, 3, 3, 3, 0]. The receiver created the image on the right, based on this message.
+  </figcaption>
+</figure>
+
 
 We designed and implemented a referential game where the sender agent sees images by means of a **Convolutional Neural Network** (CNN). The CNN serves as a feature extractor. The extracted features are then the input to a **Recurrent Neural Network** (RNN) which generates a message. This message is sent to a receiver who decodes it using another RNN. The output of this RNN is given to a **Fully Connected Feed Forward Network** that generates an image based on the input given.
 
-### Literature
 
-## Methods: Reinforce with EGG
+## Methods: Referential Language Games with EGG
 EGG (Emergence of lanGuage in Games) [3] is a toolkit developed by Facebook for implementing referential language games. The games can be divided into two categories (I) Discrimination, here the receiver agent has to choose the coorect image from a set of images that additionaly includes distractor images. (II) Reconstruction, in this version, which is implemented here, the task of the receiver is to recreate the original image.
 
 We created a set of images where each image is of size 100x100 pixels and with three colour channels. The content of the images consist of: a shape, the shapes center in terms of x-coordinate and y-coordinate, the shape's size size, color, and the existence of an outline. Each of these features is mapped onto the interval \[0, 1\]. The shape can be one of three categories (circle, square, triangle). For simplicity, the vector representation assumes an ordinal scaling and maps these three categories to the values 0, 0.5 and 1.0, respectively. This means one image is represented as a vector if size 6 with each element in the intervall \[0,1\]
@@ -23,19 +31,40 @@ The term REINFORCE is used inconsistently in the literature. Accoring to [1], it
 
 $\Delta w_{ij} = \alpha_{ij}(r-b_{ij})e_{ij}$
 
-In other sources ([2]), a baseline is not nessecary. The implementation in EGG follows the first definition [3] and adapts it to a referential language game scenario. That implies offline learning, since updates can only done after a complete message was sampled after completing an episode. An extension with actor-critics is not possible in an offline learning scenario [2].
+In other sources ([2]), a baseline is not nessecary. The implementation in EGG follows the first definition [3] and adapts it to a referential language game scenario. That implies offline learning, since updates can only be done after a complete message was sampled after completing an episode. An extension with actor-critics is not possible in an offline learning scenario [2].
 
 The baseline that EGG uses is the average of all previously recored rewards. In [4] this is (in cases like this) proven to converge to the optimal baseline that most reduces variance.
 
 ## Implementation
 
-The training of the game can be found in `main.py` and an exemple evaluation in `evaluation.ipynb`. Pretrained models can be loaded from `/models`. The data for the training and testing during training can be found in `/data/continuous` and additionaly testing data used in the evaluation in `/data/eval`. For the usage of the individual classes and functions, please refer to the docstrings.
+The training of the game can be found in `main.py` and an exemple evaluation in `evaluation.ipynb`. Pretrained models can be loaded from `/models`. The data for the training and testing during training can be found in `/data/continuous` and additional testing data used in the evaluation in `/data/eval`. For the usage of the individual classes and functions, please refer to the docstrings.
 
-During training and after each epoch a backup of the whole `LanguageGame` instance is saved in `default.pth`
+During training and after each epoch a backup of the whole `LanguageGame` instance is saved in `default.pth`.
 
 ## Results
 
-## Discussion
+For an in depth evaluation, please refer to `evaluation.ipynb`.
+
+<figure role="group">
+  <img src="./eval/fig2.png">
+  <figcaption>
+    Fig. 2: Test loss of two games during traing. Both games seem to converge at a loss of 0.15 after 30 epochs.
+  </figcaption>
+</figure>
+
+<figure role="group">
+  <img src="./eval/fig3.png">
+  <figcaption>
+    Fig. 3: 1-gram. "1" was the most used symbol in communications about squares and circles. For triangles it was "2". For more complex n-grams, please refer to evaluation.ibynb.
+  </figcaption>
+</figure>
+
+<figure role="group">
+  <img src="./eval/fig4.png">
+  <figcaption>
+    Fig. 4: Artificial messages can be a way of assessing the semantics of individual symbols/symbol positions.
+  </figcaption>
+</figure>
 
 
 ## Refs
@@ -48,38 +77,4 @@ During training and after each epoch a backup of the whole `LanguageGame` instan
 
 [4] Weaver, L., & Tao, N. (2013). The optimal reward baseline for gradient-based reinforcement learning. arXiv preprint arXiv:1301.2315.
 
-[4] David Lewis. Convention: A philosophical study. 1969
-
-Description:
-
-1. Data: Our data consists (at this point) of 100x100 pixel images, depicting a single shape. Each shape has the following features:
-
-- posx, posy: x and y coordinates
-
-- shape: one of three categories
-
-- size: size in pixel
-
-- color: one value, based on a colormap from matplotlib
-
-- outline: boolean, if there is an outline around the shapes
-
-2. Task: Reconstruction
-
-The task of the sender agent will be to encode the image into a message. The message is then given to the receiver agent, who reconstructs the image based on the message. Alternatively, the task could be discrimination. Here, the receiver must select the original image from a set of images based on the received message. (at this point, we tend to do the first version)
-
-3. The sender agents architecture: CNN + GRU
-
-A vision module (CNN) for the sender will be pretrained on the images. The features generated by the CNN will serve as input for the GRU, which will generate the message.
-
-4. The receiver agents architecture: GRU + Fully connected layer
-
-The GRU will receive the message and it’s output will serve as an input to the dense layer. The dense layer will be of the same size and dimensionality as the original input images.
-
-5. The training
-
-Currently, we use REINFORCE to train the agents. We are going to change that to a more advanced actor-critic based algorithm.
-
-6. Evaluation
-
-Finally, we will evaluate the generated messages. We will compare the messages generated by the agents trained with REINFORCE to the messages of the agents trained with an Actor-Critic based algorithm The vector representation that underlies the data will enable us to analyze the languages capabilities regarding compositionality (is a "green triangle" a combination of "green" and "triangle" or is it a completely new concept). Maybe we will use an performance measure from the paper “The Grammar of Emergent Languages”. We will draw references to the paper we have been talking about.
+[5] David Lewis. Convention: A philosophical study. 1969
