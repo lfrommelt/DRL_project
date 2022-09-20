@@ -1,9 +1,11 @@
+# This script implements an alternative version of the game using Gumbel Softmax
+# as a comparison to REINFORCE. Differences are almost exclusively in the
+# different logging strategy
+
 import egg.core as core
 from egg.zoo.emcom_as_ssl.LARC import LARC
 
 from rlg.architectures import *
-#from rlg.interactions_fix import fix
-#from rlg import FixedTrainer
 from rlg.trainer_fix import FixedTrainer
 from torch.nn import Module
 from torch.optim import Adam
@@ -13,22 +15,13 @@ from egg.core import Interaction
 from torch.distributions import Categorical
 #import matplotlib.pyplot as plt
 
-#import argparse
-
-#from egg.core.util import get_opts
-
-'''def egg_is_fucked_up():
-    return {'validation_freq':10}
-
-core.util.get_opts = egg_is_fucked_up'''
-
-'''global common_opts
-common_opts = {'validation_freq':10}'''
-'''fix(core.dump_interactions)
-fix(core.Trainer.__init__)'''
-
 
 class EntropyLoggerGS(core.Callback):
+    '''
+    Callback for logging the entropies of the senders probability distributions,
+    from which the messages are sampled during training. Values will be saved
+    in a list as well as appended to a text file.
+    '''
     entropy_log = []
     accumulated = []
 
@@ -44,11 +37,13 @@ class EntropyLoggerGS(core.Callback):
         EntropyLoggerGS.accumulated = []
 
     def aggregate(self):
+        '''helper for getting averages'''
         entropies = ([Categorical(logits=torch.FloatTensor(logits)).entropy() for logits in EntropyLoggerGS.accumulated])
         EntropyLoggerGS.accumulated = []
-        return torch.stack(entropies).flatten().mean()
+        return torch.cat(entropies).flatten().mean()
 
 def gs_logging_wrapper(self, x, aux_input=None):
+    '''Wrapper for the forward step, in order to catch logits'''
     sequence, logits = _forward(self, x, aux_input=None)
     if self.training:
         for unbatched in logits:
@@ -59,6 +54,11 @@ def gs_logging_wrapper(self, x, aux_input=None):
 
 
 def _forward(self, x, aux_input=None):
+    '''
+    Changed version of forward() from 
+    egg.core.reinforce_wrappers.RnnSenderGS
+    for logging purposes
+    '''
     prev_hidden = self.agent(x, aux_input)
     prev_c = torch.zeros_like(prev_hidden)  # only for LSTM
 
@@ -92,8 +92,7 @@ def _forward(self, x, aux_input=None):
 
 class LanguageGameGS(core.SenderReceiverRnnGS):
     '''
-    Definition of the whole language game
-    todo: implement actor critics
+    Class for the whole langage game
     '''
 
 
@@ -143,7 +142,15 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
 
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
-        # games trainer
+        '''
+        Train the game for an amount of n_epochs with train_data.
+        
+        params:
+        n_epochs (int)
+        train_data (torch.DataLoader)
+        test_data: Used only as an argument for trainer, no real impact
+        save_name (str): file name for serializing models during training
+        '''
         self.trainer = core.Trainer(game=self,
                                    optimizer=self.optimizer,
                                    train_data=train_data,
@@ -156,6 +163,10 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
 
 
     def get_trainer(self, train_data, test_data):
+        '''
+        Get a trainer instance of a model for accessing trainer methods, like
+        trainer.eval()
+        '''
         self.trainer = core.Trainer(game=self,
                                         optimizer=self.optimizer,
                                         train_data=train_data,
@@ -167,6 +178,15 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
 
     @staticmethod
     def load(name = 'default', sender_entropy_coeff=0.002, receiver_entropy_coeff=0.0005, vision_class = Vision):
+        '''
+        Load and return a serialized game
+        
+        params:
+        name (str): filename
+        sender_entropy_coeff, receiver entropy_coeff (float): should be the same
+            as during training
+        vision_class (dType): In case a different vision architecture was used
+        '''
         vision = vision_class()
 
         # Agent's and game's setup
@@ -179,8 +199,8 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
         game.eval()
         return game
 
-    # Easy plotting of the images
     def get_output(self, _, test_dataset):
+        '''Get Receiver output'''
         interaction = \
             core.dump_interactions(self, test_dataset, gs=False, variable_length=True)
 
@@ -200,6 +220,7 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
         return plots, titles
 
     def plot(self, test_data, name="reinf_Own_Game"):
+        '''Easy plotting of examples'''
         plots_game_lstm_Cifar10_GS, titles_game_lstm_Cifar10_GS = self.get_output(self, test_data)
 
         plots = []

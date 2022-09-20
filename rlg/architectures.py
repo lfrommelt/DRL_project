@@ -6,17 +6,23 @@ from os.path import normpath
 import os
 
 class Hyperparameters:
+
+    # loss for training
     loss = custom_loss
-    # Game's parameter
+    # hidden size of the GRUs
     hidden_size = 256
+    # embedding of discrete symbols
     emb_size = 128
+    # number of possible symbols, including eos
     vocab_size = 4
+    # maximal number of symbols per message
     max_len = 5
-    # todo: params
 
 
-# Simple CNN's architecture
 class Vision(nn.Module):
+    '''
+    Vision Module CNN architecture
+    '''
     def __init__(self):
         super(Vision, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=4, stride=1, padding=1)
@@ -51,18 +57,20 @@ class Vision(nn.Module):
         return x
 
     def save(self, name):
+        '''
+        Save a vision module to /models
+        
+        params:
+        name (string): name of the file for saving
+        '''
         torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
 
- #   @staticmethod
-  #  def load(name = 'class_prediction.pth'):
-   #     vision = Vision()
-    #    vision.load_state_dict(
-     #       torch.load('./models/'+name, map_location=torch.device('cpu')))
-
-      #  return vision
 
 # Agent's vision module
 class PretrainVision(nn.Module):
+    '''
+    Class for pretraining the vision module
+    '''
     def __init__(self, vision_module):
         super(PretrainVision, self).__init__()
         self.vision_module = vision_module
@@ -73,18 +81,11 @@ class PretrainVision(nn.Module):
         x = self.fc(torch.sigmoid(x))
         return x
 
-  #  @staticmethod
-   # def load():
-    #    # todo: load weights from data/vision.
-     #   vision = Vision()
-      #  class_prediction = PretrainVision(vision)
-       # class_prediction.load_state_dict(
-        #    torch.load('./models/class_prediction.pth', map_location=torch.device('cpu')))
-
-        #return class_prediction
-
     # function to check the accuracy of the vision-modules
     def check_accuracy(self, data_loader):
+        '''
+        evaluate the performance on a given dataset (torch.DataLoader)
+        '''
         losses = 0
         num_samples = 0
         model = self
@@ -102,18 +103,27 @@ class PretrainVision(nn.Module):
                 losses += loss.mean().item()
                 num_samples += 1
 
-            #print('Got: ', mean_loss / num_samples)
         mean_loss = losses/num_samples
         return mean_loss
 
     def save(self, name):
-        print(os.getcwd())
+        '''
+        Save a trainable vision module to /models, training can be continued
+        
+        params:
+        name (string): name of the file for saving
+        '''
         torch.save(self.state_dict(), normpath('models/'+name+'.trainable_vision'))
 
 # Receiver's and Sender's architecture
-class SenderCifar10(nn.Module):
+class Sender(nn.Module):
+    '''
+    This class constitutes an "agent" in EGG's terminology. It consists of a
+    vision module and a layer, that maps to the hidden size of the sender of 
+    the GRU
+    '''
     def __init__(self, vision, output_size=Hyperparameters.hidden_size):
-        super(SenderCifar10, self).__init__()
+        super(Sender, self).__init__()
         self.fc = nn.Linear(500, output_size)
         self.vision = vision
 
@@ -123,9 +133,14 @@ class SenderCifar10(nn.Module):
         x = self.fc(x)
         return x
 
-class ReceiverCifar10(nn.Module):
+class Receiver(nn.Module):
+    '''
+    This class constitutes an "agent" in EGG's terminology. It consists of a
+    layer, that maps from the hidden size of the sender to the output size
+    i.e. the size of the images
+    '''
     def __init__(self, input_size=Hyperparameters.hidden_size):
-        super(ReceiverCifar10, self).__init__()
+        super(Receiver, self).__init__()
         self.fc = nn.Linear(input_size, 3 * 100 * 100)
 
     def forward(self, channel_input, receiver_input=None, aux_input=None):
