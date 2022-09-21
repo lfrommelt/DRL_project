@@ -1,14 +1,10 @@
-import egg.core as core
-from egg.zoo.emcom_as_ssl.LARC import LARC
-
 from rlg.architectures import *
 from torch.nn import Module
 from torch.optim import Adam
 from torch import save
 import torch
 from egg.core import Interaction
-from torch.distributions import Categorical
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 class EntropyLogger(core.Callback):
@@ -69,8 +65,8 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         )
 
         self.optimizer = Adam([
-            {'params': sender.parameters(), 'lr': 1e-4},
-            {'params': receiver.parameters(), 'lr': 1e-3}])
+            {'params': sender.parameters(), 'lr': 1e-5},
+            {'params': receiver.parameters(), 'lr': 1e-4}])
         
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
@@ -122,8 +118,8 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         vision = vision_class()
 
         # Agent's and game's setup
-        sender = SenderCifar10(vision)
-        receiver = ReceiverCifar10()
+        sender = Sender(vision)
+        receiver = Receiver()
 
         game = LanguageGame(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
         game.load_state_dict(
@@ -139,7 +135,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         print(interaction.message)
         plots = []
         titles = []
-        for z in range(10):
+        for z in range(8):
             src = interaction.sender_input[z].permute(1, 2, 0)
             dst = interaction.receiver_output[z].view(3, 100, 100).permute(1, 2, 0)
             interaction_message = interaction.message[z]
@@ -158,14 +154,14 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
 
         plots = []
         titles = []
-        for i in range(10):
+        for i in range(8):
             plots.append(plots_game_lstm_Cifar10_GS[i])
             titles.append(titles_game_lstm_Cifar10_GS[i])
 
         fig = plt.figure(figsize=(100, 100))
         fig.tight_layout()
         columns = 1
-        rows = 10
+        rows = 8
         for i in range(1, columns * rows + 1):
             img = plots[i - 1]
             img = img
@@ -178,7 +174,7 @@ class LanguageGame(core.SenderReceiverRnnReinforce):
         for i in fig.axes:
             i.set_xticks([])
             i.set_yticks([])
-
-        plt.savefig(name + '_train.png')
+        plt.show()
+      #  plt.savefig(name + '_train.png')
 
 

@@ -2,18 +2,14 @@
 # as a comparison to REINFORCE. Differences are almost exclusively in the
 # different logging strategy
 
-import egg.core as core
-from egg.zoo.emcom_as_ssl.LARC import LARC
-
 from rlg.architectures import *
-from rlg.trainer_fix import FixedTrainer
 from torch.nn import Module
 from torch.optim import Adam
 from torch import save
 import torch
 from egg.core import Interaction
 from torch.distributions import Categorical
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 class EntropyLoggerGS(core.Callback):
@@ -116,7 +112,7 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
                                       embed_dim=Hyperparameters.emb_size,
                                       hidden_size=Hyperparameters.hidden_size,
                                       cell="gru")
-        self.callbacks.append(core.TemperatureUpdater(sender, minimum=0.8, update_frequency=1, decay=0.92))
+        self.callbacks.append(core.TemperatureUpdater(sender, minimum=0.8, update_frequency=1, decay=0.9))
         self.callbacks.append(EntropyLoggerGS())
         self.callbacks.append(core.ConsoleLogger(as_json=False, print_train_loss=True))
 
@@ -134,8 +130,8 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
         )
 
         self.optimizer = Adam([
-            {'params': sender.parameters(), 'lr': 1e-4},
-            {'params': receiver.parameters(), 'lr': 1e-3}])
+            {'params': sender.parameters(), 'lr': 1e-5},
+            {'params': receiver.parameters(), 'lr': 1e-4}])
         #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
 
         # Callbacks
@@ -190,10 +186,10 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
         vision = vision_class()
 
         # Agent's and game's setup
-        sender = SenderCifar10(vision)
-        receiver = ReceiverCifar10()
+        sender = Sender(vision)
+        receiver = Receiver()
 
-        game = LanguageGame(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
+        game = LanguageGameGS(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
         game.load_state_dict(
             torch.load('./models/'+name+'.pth', map_location=core.get_opts().device))
         game.eval()
@@ -202,14 +198,15 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
     def get_output(self, _, test_dataset):
         '''Get Receiver output'''
         interaction = \
-            core.dump_interactions(self, test_dataset, gs=False, variable_length=True)
+            core.dump_interactions(self, test_dataset, gs=True, variable_length=True)
 
         plots = []
         titles = []
-        for z in range(10):
+        for z in range(8):
             src = interaction.sender_input[z].permute(1, 2, 0)
             dst = interaction.receiver_output[z].view(3, 100, 100).permute(1, 2, 0)
-            interaction_message = interaction.message[z]
+            dst = dst[0]
+            interaction_message = torch.argmax(interaction.message[z], dim=1)
 
             image = torch.cat([src, dst], dim=1).cpu().numpy()
             title = (f"Input: digit {z}, channel message {interaction_message}")
@@ -225,14 +222,14 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
 
         plots = []
         titles = []
-        for i in range(10):
+        for i in range(8):
             plots.append(plots_game_lstm_Cifar10_GS[i])
             titles.append(titles_game_lstm_Cifar10_GS[i])
 
         fig = plt.figure(figsize=(100, 100))
         fig.tight_layout()
         columns = 1
-        rows = 10
+        rows = 8
         for i in range(1, columns * rows + 1):
             img = plots[i - 1]
             img = img
