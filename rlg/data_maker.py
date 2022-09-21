@@ -2,7 +2,6 @@ from PIL import Image, ImageDraw
 from numpy.random import choice, random
 import numpy as np
 from PIL.ImageColor import getrgb
-import sys
 from os.path import normpath
 from tqdm import tqdm
 import matplotlib as mpl
@@ -28,7 +27,6 @@ def generate_label(features,color_index,outline):
     shape = features[2]/2
     size = features[3]/25
     color = color_index
-   # print(x,y,size,shape)
     return (x,y,shape,size,color,outline)
 
 def generate_image(discrete, color):
@@ -72,7 +70,7 @@ def generate_image(discrete, color):
         vector_repr[4:] *= 255
         vector_repr[4:] = [int(x) for x in vector_repr[4:]]
 
-        # hier auskommentieren für ohne farbe
+        # if uncomment, images will be generated without color
         #vector_repr[4:] = [255,255,255]
         label = generate_label(vector_repr,color_index,outline)
     if vector_repr[2]==2:

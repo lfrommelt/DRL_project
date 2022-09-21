@@ -17,7 +17,7 @@ def main(args):
 
     '''80% of data will be used for training. Alternativly, give a tuple.
     E.g. (100, 20) for 100 training and 20 test images.'''
-    train_data_loader, test_data_loader = rlg.load_dataset((1/10))#0.8)
+    train_data_loader, test_data_loader = rlg.load_dataset(0.8)
 
     for epoch in range(15):
         mean_loss, n_batches = 0, 0
@@ -40,12 +40,15 @@ def main(args):
     # pass only the vision module, the rest was for pretraining
     sender = rlg.Sender(class_prediction.vision_module)
     receiver = rlg.Receiver()
+
+    # to train the game with reinforce, use LanguageGame, to train with gumbel softmax, use LanguageGameGS
     game = rlg.LanguageGame(sender, receiver)
-    
+  #  game = rlg.LanguageGameGS(sender, receiver)
+
     # train for 20 epochs
     game.train2(20, train_data_loader, test_data_loader)
     # plot an example communication
-    _, showcase = rlg.load_dataset((1/10))
+    _, showcase = rlg.load_dataset(0.2)
     game.plot(showcase)
 
 if __name__ == "__main__":

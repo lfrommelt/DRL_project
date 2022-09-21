@@ -56,16 +56,6 @@ class Vision(nn.Module):
 
         return x
 
-    def save(self, name):
-        '''
-        Save a vision module to /models
-        
-        params:
-        name (string): name of the file for saving
-        '''
-        torch.save(self.state_dict(), normpath('/models/'+name+'.vision'))
-
-
 # Agent's vision module
 class PretrainVision(nn.Module):
     '''

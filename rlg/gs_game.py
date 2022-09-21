@@ -96,8 +96,6 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
             self,
             sender: Module,
             receiver: Module,
-            sender_entropy_coeff: float = 0.005,
-            receiver_entropy_coeff: float = 0.0,
             length_cost: float = 0.0,
     ):
         self.callbacks = []
@@ -124,18 +122,12 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
             sender,
             receiver,
             loss,
-            #     sender_entropy_coeff,
-            #    receiver_entropy_coeff,
             length_cost,
         )
 
         self.optimizer = Adam([
             {'params': sender.parameters(), 'lr': 1e-5},
             {'params': receiver.parameters(), 'lr': 1e-4}])
-        #   self.optimizer = LARC(optimizer, trust_coefficient=0.001, clip=False, eps=1e-8)
-
-        # Callbacks
-
 
     def train2(self, n_epochs, train_data, test_data, save_name='default'):
         '''
@@ -189,7 +181,7 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
         sender = Sender(vision)
         receiver = Receiver()
 
-        game = LanguageGameGS(sender, receiver, sender_entropy_coeff=sender_entropy_coeff, receiver_entropy_coeff=receiver_entropy_coeff)
+        game = LanguageGameGS(sender, receiver)
         game.load_state_dict(
             torch.load('./models/'+name+'.pth', map_location=core.get_opts().device))
         game.eval()
@@ -204,10 +196,8 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
         titles = []
         for z in range(8):
             src = interaction.sender_input[z].permute(1, 2, 0)
-            dst = interaction.receiver_output[z].view(3, 100, 100).permute(1, 2, 0)
-            dst = dst[0]
-            interaction_message = torch.argmax(interaction.message[z], dim=1)
-
+            dst = interaction.receiver_output[z][0].view(3, 100, 100).permute(1, 2, 0)
+            interaction_message = interaction.message[z]
             image = torch.cat([src, dst], dim=1).cpu().numpy()
             title = (f"Input: digit {z}, channel message {interaction_message}")
             plt.title = title
@@ -243,4 +233,5 @@ class LanguageGameGS(core.SenderReceiverRnnGS):
             i.set_xticks([])
             i.set_yticks([])
 
+        plt.show()
         plt.savefig(name + '_train.png')
